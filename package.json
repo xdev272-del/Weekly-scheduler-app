@@ -1,0 +1,28 @@
+{
+  "name": "weekly-planner",
+  "version": "1.0.0",
+  "description": "Personal weekly planner desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.yourname.weekly-planner",
+    "productName": "Weekly Planner",
+    "win": {
+      "target": "nsis",
+      "icon": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "shortcutName": "Weekly Planner"
+    }
+  }
+}

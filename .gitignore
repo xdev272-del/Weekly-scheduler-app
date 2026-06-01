@@ -1,0 +1,5 @@
+# Ignore my personal save files
+save.json
+data.json
+dist/
+node_modules/

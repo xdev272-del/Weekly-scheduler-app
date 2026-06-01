@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --surface3: #2a2a2a;
+    --border: #2e2e2e;
+    --border2: #3a3a3a;
+    --text: #f0ede8;
+    --text2: #9a9690;
+    --text3: #5a5755;
+    --accent: #d4a853;
+    --accent2: #b8923d;
+    --done: #4a7c59;
+    --done-bg: #1a2e22;
+    --danger: #c0503a;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── TITLEBAR ── */
+  #titlebar {
+    height: 44px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    -webkit-app-region: drag;
+  }
+  #titlebar .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+  #titlebar .nav-tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    -webkit-app-region: no-drag;
+  }
+  #titlebar .nav-tab {
+    padding: 5px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: background 0.15s, color 0.15s;
+  }
+  #titlebar .nav-tab:hover { background: var(--surface2); color: var(--text); }
+  #titlebar .nav-tab.active { background: var(--surface3); color: var(--text); }
+
+  /* ── VIEWS ── */
+  .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* ── WEEK VIEW ── */
+  #week-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #week-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 220px;
+  }
+  #week-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+  .nav-btn {
+    width: 30px; height: 30px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .nav-btn:hover { background: var(--surface3); color: var(--text); }
+  #today-btn {
+    margin-left: 4px;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s, color 0.15s;
+  }
+  #today-btn:hover { background: var(--surface3); color: var(--text); }
+
+  /* ── DAY GRID ── */
+  #day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    flex: 1;
+    overflow: hidden;
+    background: var(--border);
+  }
+  .day-col {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .day-col.today .day-head { background: var(--surface3); }
+  .day-col.today .day-name { color: var(--accent); }
+  .day-head {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .day-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+  .day-date {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.2;
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+  }
+  .day-col.today .day-date { color: var(--accent); }
+
+  .task-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 8px 60px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .task-list::-webkit-scrollbar { width: 4px; }
+  .task-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 6px 7px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 3px;
+    transition: background 0.12s;
+    cursor: default;
+    group: task;
+  }
+  .task-item:hover { background: var(--surface2); }
+  .task-item:hover .task-del { opacity: 1; }
+
+  .task-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .task-check.checked {
+    background: var(--done-bg);
+    border-color: var(--done);
+  }
+  .task-check.checked::after {
+    content: '';
+    display: block;
+    width: 9px; height: 6px;
+    border-left: 1.5px solid var(--done);
+    border-bottom: 1.5px solid var(--done);
+    transform: rotate(-45deg) translateY(-1px);
+  }
+  .task-text {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text);
+    word-break: break-word;
+    user-select: text;
+  }
+  .task-text.done {
+    color: var(--text3);
+    text-decoration: line-through;
+  }
+  .task-del {
+    opacity: 0;
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.12s, background 0.12s;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .task-del:hover { color: var(--danger); background: rgba(192,80,58,0.12); }
+
+  /* add input per day */
+  .day-add-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .day-add {
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: color 0.15s;
+  }
+  .day-add::placeholder { color: var(--text3); }
+  .day-add:focus { color: var(--text); background: var(--surface2); }
+
+  /* ── BACKLOG VIEW ── */
+  #backlog-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  #backlog-view::-webkit-scrollbar { width: 6px; }
+  #backlog-view::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .backlog-empty {
+    text-align: center;
+    padding: 80px 0;
+    color: var(--text3);
+    font-size: 14px;
+  }
+
+  .month-group { margin-bottom: 36px; }
+  .month-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .week-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .week-block-head {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    gap: 10px;
+  }
+  .week-block-head:hover { background: var(--surface2); }
+  .week-block-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+  }
+  .week-block-count {
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: auto;
+  }
+  .week-block-chevron {
+    font-size: 12px;
+    color: var(--text3);
+    transition: transform 0.18s;
+  }
+  .week-block.open .week-block-chevron { transform: rotate(90deg); }
+
+  .week-block-body {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .week-block.open .week-block-body { display: block; }
+
+  .backlog-day-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .backlog-day-row:last-child { border-bottom: none; }
+  .backlog-day-label {
+    width: 88px;
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 12px;
+  }
+  .backlog-tasks {
+    flex: 1;
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: flex-start;
+  }
+  .backlog-task-chip {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--surface2);
+  }
+  .backlog-task-chip.done {
+    color: var(--text3);
+    text-decoration: line-through;
+    background: transparent;
+    border-color: var(--border);
+  }
+  .backlog-day-empty {
+    font-size: 12px;
+    color: var(--text3);
+    padding: 10px 0;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<!-- TITLEBAR -->
+<div id="titlebar">
+  <span class="logo">◈ WEEKLY PLANNER</span>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('week')">This Week</button>
+    <button class="nav-tab" onclick="showView('backlog')">Backlog</button>
+  </div>
+</div>
+
+<!-- WEEK VIEW -->
+<div id="week-view" class="view active">
+  <div id="week-header">
+    <button class="nav-btn" onclick="changeWeek(-1)">&#8592;</button>
+    <button class="nav-btn" onclick="changeWeek(1)">&#8594;</button>
+    <button id="today-btn" onclick="goToday()">Today</button>
+    <span id="week-label"></span>
+    <span id="week-sub"></span>
+  </div>
+  <div id="day-grid"></div>
+</div>
+
+<!-- BACKLOG VIEW -->
+<div id="backlog-view" class="view">
+</div>
+
+<script>
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+let currentWeekOffset = 0
+
+// ── STORAGE ──
+function storageKey(dateStr) { return 'tasks_' + dateStr }
+function loadTasks(dateStr) {
+  try { return JSON.parse(localStorage.getItem(storageKey(dateStr))) || [] } catch { return [] }
+}
+function saveTasks(dateStr, tasks) {
+  localStorage.setItem(storageKey(dateStr), JSON.stringify(tasks))
+}
+
+// ── DATE HELPERS ──
+function getWeekStart(offset = 0) {
+  const now = new Date()
+  const day = now.getDay()
+  const start = new Date(now)
+  start.setDate(now.getDate() - day + offset * 7)
+  start.setHours(0,0,0,0)
+  return start
+}
+function dateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+}
+function isToday(d) {
+  const t = new Date(); t.setHours(0,0,0,0)
+  return d.getTime() === t.getTime()
+}
+function fmtRange(start, end) {
+  if (start.getMonth() === end.getMonth())
+    return MONTHS[start.getMonth()] + ' ' + start.getDate() + '–' + end.getDate() + ', ' + start.getFullYear()
+  return MONTHS_SHORT[start.getMonth()] + ' ' + start.getDate() + ' – ' + MONTHS_SHORT[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear()
+}
+
+// ── VIEWS ──
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'))
+  if (v === 'week') {
+    document.getElementById('week-view').classList.add('active')
+    document.querySelectorAll('.nav-tab')[0].classList.add('active')
+  } else {
+    document.getElementById('backlog-view').classList.add('active')
+    document.querySelectorAll('.nav-tab')[1].classList.add('active')
+    renderBacklog()
+  }
+}
+
+// ── WEEK VIEW ──
+function changeWeek(d) { currentWeekOffset += d; renderWeek() }
+function goToday() { currentWeekOffset = 0; renderWeek() }
+
+function renderWeek() {
+  const start = getWeekStart(currentWeekOffset)
+  const end = new Date(start); end.setDate(start.getDate() + 6)
+  document.getElementById('week-label').textContent = fmtRange(start, end)
+  document.getElementById('week-sub').textContent =
+    currentWeekOffset === 0 ? 'current week' :
+    currentWeekOffset < 0 ? `${Math.abs(currentWeekOffset)} week${Math.abs(currentWeekOffset)>1?'s':''} ago` :
+    `${currentWeekOffset} week${currentWeekOffset>1?'s':''} ahead`
+
+  const grid = document.getElementById('day-grid')
+  grid.innerHTML = ''
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i)
+    const ds = dateStr(d)
+    const tasks = loadTasks(ds)
+    const col = document.createElement('div')
+    col.className = 'day-col' + (isToday(d) ? ' today' : '')
+    col.innerHTML = `
+      <div class="day-head">
+        <div class="day-name">${DAYS[d.getDay()]}</div>
+        <div class="day-date">${d.getDate()}</div>
+      </div>
+      <div class="task-list" id="tl-${ds}"></div>
+      <div class="day-add-wrap">
+        <input class="day-add" placeholder="+ add task" data-date="${ds}"
+          onkeydown="handleAddKey(event, '${ds}')" />
+      </div>
+    `
+    grid.appendChild(col)
+    renderTaskList(ds, tasks)
+  }
+}
+
+function renderTaskList(ds, tasks) {
+  const el = document.getElementById('tl-' + ds)
+  if (!el) return
+  el.innerHTML = ''
+  tasks.forEach((t, i) => {
+    const item = document.createElement('div')
+    item.className = 'task-item'
+    item.innerHTML = `
+      <div class="task-check${t.done ? ' checked' : ''}" onclick="toggleTask('${ds}',${i})"></div>
+      <span class="task-text${t.done ? ' done' : ''}">${escHtml(t.text)}</span>
+      <button class="task-del" onclick="deleteTask('${ds}',${i})" title="Delete">✕</button>
+    `
+    el.appendChild(item)
+  })
+}
+
+function handleAddKey(e, ds) {
+  if (e.key !== 'Enter') return
+  const val = e.target.value.trim()
+  if (!val) return
+  const tasks = loadTasks(ds)
+  tasks.push({ text: val, done: false })
+  saveTasks(ds, tasks)
+  e.target.value = ''
+  renderTaskList(ds, tasks)
+}
+
+function toggleTask(ds, idx) {
+  const tasks = loadTasks(ds)
+  tasks[idx].done = !tasks[idx].done
+  saveTasks(ds, tasks)
+  renderTaskList(ds, tasks)
+}
+
+function deleteTask(ds, idx) {
+  const tasks = loadTasks(ds)
+  tasks.splice(idx, 1)
+  saveTasks(ds, tasks)
+  renderTaskList(ds, tasks)
+}
+
+// ── BACKLOG ──
+function renderBacklog() {
+  const container = document.getElementById('backlog-view')
+  const allKeys = Object.keys(localStorage)
+    .filter(k => k.startsWith('tasks_'))
+    .map(k => k.replace('tasks_', ''))
+    .sort()
+
+  // filter to past weeks only (not current or future)
+  const thisWeekStart = getWeekStart(0)
+  const pastDates = allKeys.filter(ds => {
+    const d = new Date(ds + 'T00:00:00')
+    return d < thisWeekStart
+  })
+
+  if (pastDates.length === 0) {
+    container.innerHTML = '<div class="backlog-empty">No past weeks yet. Come back next week!</div>'
+    return
+  }
+
+  // group by week then by month
+  const weeks = {}
+  pastDates.forEach(ds => {
+    const d = new Date(ds + 'T00:00:00')
+    const wStart = new Date(d); wStart.setDate(d.getDate() - d.getDay()); wStart.setHours(0,0,0,0)
+    const wKey = dateStr(wStart)
+    if (!weeks[wKey]) weeks[wKey] = { start: wStart, days: {} }
+    weeks[wKey].days[ds] = loadTasks(ds)
+  })
+
+  // group weeks by month
+  const monthGroups = {}
+  Object.keys(weeks).sort().reverse().forEach(wk => {
+    const w = weeks[wk]
+    const mKey = w.start.getFullYear() + '-' + String(w.start.getMonth()+1).padStart(2,'0')
+    if (!monthGroups[mKey]) monthGroups[mKey] = { label: MONTHS[w.start.getMonth()] + ' ' + w.start.getFullYear(), weeks: [] }
+    monthGroups[mKey].weeks.push(w)
+  })
+
+  container.innerHTML = ''
+  Object.keys(monthGroups).sort().reverse().forEach(mk => {
+    const mg = monthGroups[mk]
+    const mDiv = document.createElement('div')
+    mDiv.className = 'month-group'
+    mDiv.innerHTML = `<div class="month-label">${mg.label}</div>`
+
+    mg.weeks.forEach(w => {
+      const wEnd = new Date(w.start); wEnd.setDate(w.start.getDate() + 6)
+      const totalTasks = Object.values(w.days).reduce((s, t) => s + t.length, 0)
+      const doneTasks = Object.values(w.days).reduce((s, t) => s + t.filter(x=>x.done).length, 0)
+
+      const wDiv = document.createElement('div')
+      wDiv.className = 'week-block'
+      const wKey = 'wb_' + dateStr(w.start)
+
+      wDiv.innerHTML = `
+        <div class="week-block-head" onclick="toggleWeekBlock('${wKey}')">
+          <span class="week-block-chevron">▶</span>
+          <span class="week-block-title">${fmtRange(w.start, wEnd)}</span>
+          <span class="week-block-count">${doneTasks}/${totalTasks} done</span>
+        </div>
+        <div class="week-block-body" id="${wKey}">
+          ${buildWeekBodyHTML(w)}
+        </div>
+      `
+      mDiv.appendChild(wDiv)
+    })
+    container.appendChild(mDiv)
+  })
+}
+
+function buildWeekBodyHTML(w) {
+  let html = ''
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(w.start); d.setDate(w.start.getDate() + i)
+    const ds = dateStr(d)
+    const tasks = w.days[ds] || []
+    const chips = tasks.length
+      ? tasks.map(t => `<span class="backlog-task-chip${t.done?' done':''}">${escHtml(t.text)}</span>`).join('')
+      : `<span class="backlog-day-empty">—</span>`
+    html += `
+      <div class="backlog-day-row">
+        <div class="backlog-day-label">${DAYS[d.getDay()]}<br><span style="font-size:10px;color:var(--text3)">${d.getDate()}</span></div>
+        <div class="backlog-tasks">${chips}</div>
+      </div>`
+  }
+  return html
+}
+
+function toggleWeekBlock(id) {
+  const el = document.getElementById(id)
+  const block = el.parentElement
+  block.classList.toggle('open')
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+// ── INIT ──
+renderWeek()
+</script>
+</body>
+</html>
